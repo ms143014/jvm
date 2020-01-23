@@ -82,12 +82,12 @@ public class AvlTree<T extends Comparable<T>> implements Serializable {
 		if(compare < 0) {  //插入在右树上，仅会左旋
 			cur.setRightChild(insert(cur.getRightChild(), data));
 			if(!cur.isInBalance()) {
-				cur = leftRotate(cur);
+				cur = rotateLL(cur);
 			}
 		}else if(compare > 0) {//插入在右树上，仅会右旋
 			cur.setLeftChild(insert(cur.getLeftChild(), data));
 			if(!cur.isInBalance()) {
-				cur = rightRotate(cur);
+				cur = rotateRR(cur);
 			}
 		}
 		refreshHeight(this.root);
@@ -129,7 +129,7 @@ public class AvlTree<T extends Comparable<T>> implements Serializable {
 	 * @param node 父杰节点，既然是左旋，则右子树必定不为null,左子树可能为null，可能不为null
 	 * @return 返回最高的右节点
 	 * */
-	public Node<T> leftRotate(Node<T> node) {
+	public Node<T> rotateLL(Node<T> node) {
 		Node<T> rightChild = node.getRightChild();
 		node.setRightChild(null);// 必须断开，否则互指
 		rightChild.setLeftChild(node);
@@ -142,12 +142,19 @@ public class AvlTree<T extends Comparable<T>> implements Serializable {
 	 * 右旋
 	 * height(左子树) > height(右子树)
 	 * */
-	public Node<T> rightRotate(Node<T> node){
+	public Node<T> rotateRR(Node<T> node){
 		Node<T> leftChild = node.getLeftChild();
 		node.setLeftChild(null);
 		leftChild.setRightChild(node);
 		refreshHeight(this.root);
 		return leftChild;
+	}
+	public Node<T> rotateRL(Node<T> node){
+		Node<T> middle = node.getRightChild().getLeftChild();
+		middle.setRightChild(node.getRightChild());
+		node.getRightChild().setLeftChild(null);
+		middle.setLeftChild(node);
+		return middle;
 	}
 	public void printStepCopy() {
 		if(this.root == null) {
