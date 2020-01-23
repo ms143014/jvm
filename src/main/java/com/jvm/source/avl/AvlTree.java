@@ -71,9 +71,11 @@ public class AvlTree<T extends Comparable<T>> implements Serializable {
 		for(T data: datas) {
 			this.root = insert(this.root, data);
 		}
-		
 	}
-	private Node<T> insert(Node<T> cur, T data){
+	/**
+	 * 不计算高度，不旋转的元素插入， 为了构造一颗树测试
+	 * */
+	private Node<T> insertSimple(Node<T> cur, T data){
 		if(cur == null) {
 			//最后一个节点不用计算平衡
 			return new Node<T>(data);
@@ -81,55 +83,60 @@ public class AvlTree<T extends Comparable<T>> implements Serializable {
 		int compare = cur.getData().compareTo(data);
 		if(compare < 0) {  //插入在右树上，仅会左旋
 			cur.setRightChild(insert(cur.getRightChild(), data));
+		}else if(compare > 0) {//插入在右树上，仅会右旋
+			cur.setLeftChild(insert(cur.getLeftChild(), data));
+		}
+		return cur;
+	}
+	/**
+	 * 插入元素
+	 * 后置方式检查平衡
+	 * */
+	private Node<T> insert(Node<T> cur, T data){
+		if(cur == null) {
+			//最后一个节点不用计算平衡
+			return new Node<T>(data);
+		}
+		int compare = cur.getData().compareTo(data);
+		if(compare < 0) {  //插入在右树上，仅会左旋
+			cur.setRightChild(insert(cur.getRightChild(), data)); //有右
 			if(!cur.isInBalance()) {
-				cur = rotateLL(cur);
+				if(cur.getRightChild().getLeftChild() == null) {
+					cur = rotateRR(cur);
+				}else {
+					cur = rotateRL(cur);
+				}
 			}
 		}else if(compare > 0) {//插入在右树上，仅会右旋
 			cur.setLeftChild(insert(cur.getLeftChild(), data));
 			if(!cur.isInBalance()) {
-				cur = rotateRR(cur);
+				//if(cur.getLeftChild() == null) {
+					cur = rotateLL(cur); //没有左孩子，简单的转换
+				/*}else {
+					cur = rotateRL(cur); //有左孩子
+				}*/
 			}
 		}
 		refreshHeight(this.root);
 		return cur;
 	}
 	/**
-	 * 插入元素，算是前置遍历
-	 * @param current 当前节点
-	 * @param parent 当前节点的父节点，因为旋转过后需要父节点指向
-	 * */
-//	private Node<T> insert(Node<T> current, Node<T> parent, T data) {
-//		if(current == null) {
-//			current = new Node<T>(data);
-//		}else {
-//			int compare = current.getData().compareTo(data);
-//			if(compare < 0) { //插入在右树上，必定仅会出现 右子树更深
-//				current.setRightChild(insert(current.getRightChild(), current, data));
-//				refreshHeight(this.root);//临时更新高度
-//				//左旋
-//				if(!current.isInBalance()) {
-//					Node<T> rotateNode = leftRotate(current);
-//					if(current == this.root) { //以root旋转
-//						this.root = rotateNode;
-//					}else {
-//						parent.setRightChild(rotateNode);
-//						current = rotateNode;
-//					}
-//				}
-//			}else if(compare > 0) { //插入在左树上，必定仅会出现 左子树更深
-//				current.setLeftChild(insert(current.getLeftChild(), current, data));
-//			}else {
-//				//节点已存在
-//			}
-//		}
-//		return current;
-//	} 
-	/**
-	 * 左旋
+	 * RR旋转
+	 * <pre>
+	 * x
+	 *  \
+	 *   y
+	 *    \
+	 *     z
+	 *-------------
+	 *   y
+	 *  / \
+	 * x   z
+	 * </pre>
 	 * @param node 父杰节点，既然是左旋，则右子树必定不为null,左子树可能为null，可能不为null
 	 * @return 返回最高的右节点
 	 * */
-	public Node<T> rotateLL(Node<T> node) {
+	public Node<T> rotateRR(Node<T> node) {
 		Node<T> rightChild = node.getRightChild();
 		node.setRightChild(null);// 必须断开，否则互指
 		rightChild.setLeftChild(node);
@@ -139,22 +146,76 @@ public class AvlTree<T extends Comparable<T>> implements Serializable {
 		return rightChild;
 	}
 	/**
-	 * 右旋
-	 * height(左子树) > height(右子树)
+	 * LR旋转
+	 * <pre>
+	 *   x
+	 *  /
+	 * y
+	 *  \
+	 *   z
+	 *-------------
+	 *    z
+	 *   / \
+	 *  y   x
+	 * </pre>
+	 * x > z > y，所以 z为中
 	 * */
-	public Node<T> rotateRR(Node<T> node){
-		Node<T> leftChild = node.getLeftChild();
-		node.setLeftChild(null);
-		leftChild.setRightChild(node);
-		refreshHeight(this.root);
-		return leftChild;
+	public Node<T> rotateLR(Node<T> nodeX){
+		Node<T> nodeY = nodeX.getLeftChild();
+		Node<T> nodeZ = nodeY.getRightChild();
+		nodeZ.setLeftChild(nodeY);
+		nodeZ.setRightChild(nodeX);
+		
+		nodeX.setLeftChild(null);
+		nodeY.setRightChild(null);
+		
+		return null;
 	}
-	public Node<T> rotateRL(Node<T> node){
-		Node<T> middle = node.getRightChild().getLeftChild();
-		middle.setRightChild(node.getRightChild());
-		node.getRightChild().setLeftChild(null);
-		middle.setLeftChild(node);
-		return middle;
+	/**
+	 * LL旋转
+	 * <pre>
+	 *     x
+	 *    /
+	 *   y
+	 *  /
+	 * z
+	 *-------------
+	 *   y
+	 *  / \
+	 * z   x
+	 * </pre>
+	 * */
+	public Node<T> rotateLL(Node<T> nodeX){
+		Node<T> nodeY = nodeX.getLeftChild();
+		nodeY.setRightChild(nodeX);
+		
+		nodeX.setLeftChild(null); //清除
+		
+		refreshHeight(this.root);
+		return nodeY;
+	}
+	/**
+	 * RL旋转
+	 * <pre>
+	 * x
+	 *  \
+	 *   y
+	 *  /
+	 * z
+	 *-------------
+	 *    z
+	 *   / \
+	 *  x   y
+	 * </pre>
+	 * */
+	public Node<T> rotateRL(Node<T> nodeX){
+		Node<T> nodeZ = nodeX.getRightChild().getLeftChild(); //选取中心
+		Node<T> nodeY = nodeX.getRightChild();
+		nodeZ.setRightChild(nodeY);
+		nodeY.setLeftChild(null); //清除旧左孩子
+		nodeX.setRightChild(null); //清除旧左孩子
+		nodeZ.setLeftChild(nodeX);
+		return nodeZ;
 	}
 	public void printStepCopy() {
 		if(this.root == null) {

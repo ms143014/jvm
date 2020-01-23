@@ -17,12 +17,12 @@ public class AvlTreeTest {
 			AvlTree<Integer> tree = SerializationUtils.clone(_tree);
 //			AvlTree<Integer> tree = SerializationUtils.deserialize(new java.io.FileInputStream("./abcd.dat"));
 			Debugger.set("tree", tree);
-			tree.insert(4);
-			tree.insert(5);
-			tree.insert(6);
+			tree.insert(60);
+			tree.insert(70);
+			tree.insert(80);
 //			tree.root = tree.leftRotate(tree.root);
-			tree.insert(7);
-			tree.insert(8);
+//			tree.insert(7);
+//			tree.insert(8);
 //			tree.leftRotate(tree.root.getRightChild());
 			System.out.println();
 		}).join();
