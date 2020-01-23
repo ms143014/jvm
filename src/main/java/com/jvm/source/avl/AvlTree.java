@@ -79,15 +79,15 @@ public class AvlTree<T extends Comparable<T>> implements Serializable {
 			return new Node<T>(data);
 		}
 		int compare = cur.getData().compareTo(data);
-		if(compare < 0) {  //插入在右树上，必定仅会出现 右子树更深
+		if(compare < 0) {  //插入在右树上，仅会左旋
 			cur.setRightChild(insert(cur.getRightChild(), data));
 			if(!cur.isInBalance()) {
 				cur = leftRotate(cur);
 			}
-		}else if(compare > 0) {
+		}else if(compare > 0) {//插入在右树上，仅会右旋
 			cur.setLeftChild(insert(cur.getLeftChild(), data));
 			if(!cur.isInBalance()) {
-				
+				cur = rightRotate(cur);
 			}
 		}
 		refreshHeight(this.root);
@@ -137,6 +137,17 @@ public class AvlTree<T extends Comparable<T>> implements Serializable {
 		refreshHeight(this.root);
 		
 		return rightChild;
+	}
+	/**
+	 * 右旋
+	 * height(左子树) > height(右子树)
+	 * */
+	public Node<T> rightRotate(Node<T> node){
+		Node<T> leftChild = node.getLeftChild();
+		node.setLeftChild(null);
+		leftChild.setRightChild(node);
+		refreshHeight(this.root);
+		return leftChild;
 	}
 	public void printStepCopy() {
 		if(this.root == null) {
