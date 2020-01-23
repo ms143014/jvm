@@ -70,6 +70,7 @@ public class AvlTree<T extends Comparable<T>> implements Serializable {
 		}
 		for(T data: datas) {
 			this.root = insert(this.root, data);
+			refreshHeight(this.root); //对于root，需要计算
 		}
 	}
 	/**
@@ -110,11 +111,11 @@ public class AvlTree<T extends Comparable<T>> implements Serializable {
 		}else if(compare > 0) {//插入在右树上，仅会右旋
 			cur.setLeftChild(insert(cur.getLeftChild(), data));
 			if(!cur.isInBalance()) {
-				//if(cur.getLeftChild() == null) {
+				if(cur.getLeftChild().getRightChild() == null) {
 					cur = rotateLL(cur); //没有左孩子，简单的转换
-				/*}else {
-					cur = rotateRL(cur); //有左孩子
-				}*/
+				}else {
+					cur = rotateLR(cur); //有左孩子
+				}
 			}
 		}
 		refreshHeight(this.root);
