@@ -169,7 +169,7 @@ public class AvlTree<T extends Comparable<T>> implements Serializable {
 		nodeX.setLeftChild(null);
 		nodeY.setRightChild(null);
 		
-		return null;
+		return nodeZ;
 	}
 	/**
 	 * LL旋转
