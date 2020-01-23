@@ -64,90 +64,66 @@ public class AvlTree<T extends Comparable<T>> implements Serializable {
 		node.setHeight(height = Math.max(leftHeight, rightHeight) + 1);
 		return height;
 	}
-	public void travel() {
-		travel(this.root);
-	}
-	public void travel(Node<T> node) {
-		if(node.getLeftChild() != null) {
-			
-		}
-	}
-//	public int insert(T data) {
-//		if(data == null) {
-//			throw new RuntimeException("不能插入null"); 
-//		}
-//		if(root == null) {
-//			this.root = new Node<T>(data);
-//			return INSERT_SUCCESS;
-//		}
-//		Node<T> cursor = root;
-//		while(true) {
-//			if(data.compareTo(cursor.getData()) > 0) {
-//				if(cursor.getRightChild() != null) {
-//					cursor = cursor.getRightChild();
-//				}else {
-//					cursor.setRightChild(new Node<T>(data));
-//					break;
-//				}
-//			}else if(data.compareTo(cursor.getData()) < 0) {
-//				if(cursor.getLeftChild() != null) {
-//					cursor = cursor.getLeftChild();
-//				}else {
-//					cursor.setLeftChild(new Node<T>(data));
-//					break;
-//				}
-//			}else {
-//				return INSERT_ALREADY_EXISTS; //节点找到，不能加
-//			}
-//		}
-//		refreshHeight(this.root); //必须刷新整棵树，因为插入的是叶子
-//		return INSERT_SUCCESS;
-//	}
 	public void insert(@SuppressWarnings("unchecked") T...datas) {
 		if(datas == null || datas.length == 0) {
 			throw new RuntimeException("请提供插入的数据"); 
 		}
 		for(T data: datas) {
-			if(root == null) {
-				this.root = new Node<T>(data);
-				continue;
-			}
-			insert(this.root, null, data);
-			refreshHeight(this.root);
+			this.root = insert(this.root, data);
 		}
 		
+	}
+	private Node<T> insert(Node<T> cur, T data){
+		if(cur == null) {
+			//最后一个节点不用计算平衡
+			return new Node<T>(data);
+		}
+		int compare = cur.getData().compareTo(data);
+		if(compare < 0) {  //插入在右树上，必定仅会出现 右子树更深
+			cur.setRightChild(insert(cur.getRightChild(), data));
+			if(!cur.isInBalance()) {
+				cur = leftRotate(cur);
+			}
+		}else if(compare > 0) {
+			cur.setLeftChild(insert(cur.getLeftChild(), data));
+			if(!cur.isInBalance()) {
+				
+			}
+		}
+		refreshHeight(this.root);
+		return cur;
 	}
 	/**
 	 * 插入元素，算是前置遍历
 	 * @param current 当前节点
 	 * @param parent 当前节点的父节点，因为旋转过后需要父节点指向
 	 * */
-	private Node<T> insert(Node<T> current, Node<T> parent, T data) {
-		if(current == null) {
-			current = new Node<T>(data);
-		}else {
-			int compare = current.getData().compareTo(data);
-			if(compare < 0) { //插入在右树上，必定仅会出现 右子树更深
-				current.setRightChild(insert(current.getRightChild(), current, data));
-				refreshHeight(this.root);//临时更新高度
-				//左旋
-				if(!current.isInBalance()) {
-					Node<T> rotateNode = leftRotate(current);
-					if(current == this.root) { //以root旋转
-						this.root = rotateNode;
-					}else {
-						parent.setRightChild(rotateNode);
-						current = rotateNode;
-					}
-				}
-			}else if(compare > 0) { //插入在左树上，必定仅会出现 左子树更深
-				current.setLeftChild(insert(current.getLeftChild(), current, data));
-			}else {
-				//节点已存在
-			}
-		}
-		return current;
-	} 
+//	private Node<T> insert(Node<T> current, Node<T> parent, T data) {
+//		if(current == null) {
+//			current = new Node<T>(data);
+//		}else {
+//			int compare = current.getData().compareTo(data);
+//			if(compare < 0) { //插入在右树上，必定仅会出现 右子树更深
+//				current.setRightChild(insert(current.getRightChild(), current, data));
+//				refreshHeight(this.root);//临时更新高度
+//				//左旋
+//				if(!current.isInBalance()) {
+//					Node<T> rotateNode = leftRotate(current);
+//					if(current == this.root) { //以root旋转
+//						this.root = rotateNode;
+//					}else {
+//						parent.setRightChild(rotateNode);
+//						current = rotateNode;
+//					}
+//				}
+//			}else if(compare > 0) { //插入在左树上，必定仅会出现 左子树更深
+//				current.setLeftChild(insert(current.getLeftChild(), current, data));
+//			}else {
+//				//节点已存在
+//			}
+//		}
+//		return current;
+//	} 
 	/**
 	 * 左旋
 	 * @param node 父杰节点，既然是左旋，则右子树必定不为null,左子树可能为null，可能不为null
