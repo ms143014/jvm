@@ -1,5 +1,8 @@
 package com.jvm.source.avl;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.commons.lang3.SerializationUtils;
 
 /**
@@ -11,15 +14,17 @@ import org.apache.commons.lang3.SerializationUtils;
  */
 public class AvlTreeTest {
 	public static void main(String[] args) throws Exception{
+		
+		
 		AvlTree<Integer> _tree = new AvlTree<>();
 		
 		Debugger.startDaemon(()->{
 			AvlTree<Integer> tree = SerializationUtils.clone(_tree);
-//			AvlTree<Integer> tree = SerializationUtils.deserialize(new java.io.FileInputStream("./abcd.dat"));
+			tree = SerializationUtils.deserialize(new java.io.FileInputStream("./abcd.dat"));
 			Debugger.set("tree", tree);
-			tree.insert(60);
-			tree.insert(70);
-			tree.insert(80);
+//			tree.insert(4, 8);
+//			tree.insert(30);
+//			tree.insert(2);
 //			tree.root = tree.leftRotate(tree.root);
 //			tree.insert(7);
 //			tree.insert(8);

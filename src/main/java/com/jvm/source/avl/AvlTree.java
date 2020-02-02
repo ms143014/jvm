@@ -4,8 +4,6 @@ import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import com.jvm.source.bst.ClonableNode;
-
 /**
  * @功能说明:
  * @创建者: Pom
@@ -15,12 +13,14 @@ import com.jvm.source.bst.ClonableNode;
  */
 public class AvlTree<T extends Comparable<T>> implements Serializable {
 	private static final long serialVersionUID = 2604092845746514952L;
-	public static int INSERT_SUCCESS = 1;
-	public static int INSERT_ALREADY_EXISTS = 2;
-	public Node<T> root = null; 
+	private Node<T> root = null; 
+	public AvlTree<T> clear(){
+		this.root = null;
+		return this;
+	}
 	
 	/**
-	 * 查找
+	 * 查找 是否包含key
 	 * */
 	public boolean contains(T data) {
 		if(data == null) {
@@ -28,14 +28,13 @@ public class AvlTree<T extends Comparable<T>> implements Serializable {
 		}
 		Node<T> cursor = root;
 		while(cursor != null) {
-			if(data.compareTo(cursor.getData()) > 0) {
+			if(data.compareTo(cursor.getData()) > 0) { //大于，去右子树找
 				if(cursor.getRightChild() != null) {
 					cursor = cursor.getRightChild();
 				}else {
 					return false;
 				}
-				
-			}else if(data.compareTo(cursor.getData()) < 0) {
+			}else if(data.compareTo(cursor.getData()) < 0) { //小于，去左子树找
 				if(cursor.getLeftChild() != null) {
 					cursor = cursor.getLeftChild();
 				}else {
@@ -46,23 +45,25 @@ public class AvlTree<T extends Comparable<T>> implements Serializable {
 			}
 		}
 		return false;
-		
 	}
 	/**
-	 * 使用后续遍历 刷新节点的高度Height
+	 * 	寻找元素，通常同于测试节点
 	 * */
-	private int refreshHeight(Node<T> node) {
-		int leftHeight = 0;
-		int rightHeight = 0;
-		if(node.getLeftChild() != null) {
-			leftHeight = refreshHeight(node.getLeftChild());
+	public Node<T> find(T data){
+		return find(this.root, data);
+	}
+	private Node<T> find(Node<T> node, T data){
+		if(node == null) {
+			return null;
 		}
-		if(node.getRightChild() != null) {
-			rightHeight = refreshHeight(node.getRightChild());
+		int compare = node.getData().compareTo(data);
+		if(compare > 0) {
+			return find(node.getLeftChild(), data);
+		}else if(compare < 0) {
+			return find(node.getRightChild(), data);
+		}else {
+			return node;
 		}
-		int height;
-		node.setHeight(height = Math.max(leftHeight, rightHeight) + 1);
-		return height;
 	}
 	public void insert(@SuppressWarnings("unchecked") T...datas) {
 		if(datas == null || datas.length == 0) {
@@ -70,22 +71,42 @@ public class AvlTree<T extends Comparable<T>> implements Serializable {
 		}
 		for(T data: datas) {
 			this.root = insert(this.root, data);
-			refreshHeight(this.root); //对于root，需要计算
 		}
 	}
+	public void remove(T data) {
+		if(data == null) {
+			return;
+		}
+		if(this.root == null) {
+			return;
+		}
+		remove(this.root, data, false);
+	}
+	
 	/**
-	 * 不计算高度，不旋转的元素插入， 为了构造一颗树测试
+	 *  普通插入	不调整平衡 专门用于测试
 	 * */
-	private Node<T> insertSimple(Node<T> cur, T data){
+	@SuppressWarnings("unchecked")
+	public void bstInsert(T...data){
+		if(this.root == null) {
+			this.root = new Node<T>(data[0]);
+		}
+		for(int i =1 ; i < data.length; i++)
+			this.root = bstInsert(this.root, data[i]);
+	}
+	/**
+	 *  普通插入	不调整平衡 专门用于测试
+	 * */
+	public Node<T> bstInsert(Node<T> cur, T data){
 		if(cur == null) {
 			//最后一个节点不用计算平衡
 			return new Node<T>(data);
 		}
 		int compare = cur.getData().compareTo(data);
 		if(compare < 0) {  //插入在右树上，仅会左旋
-			cur.setRightChild(insert(cur.getRightChild(), data));
+			cur.setRightChild(bstInsert(cur.getRightChild(), data));
 		}else if(compare > 0) {//插入在右树上，仅会右旋
-			cur.setLeftChild(insert(cur.getLeftChild(), data));
+			cur.setLeftChild(bstInsert(cur.getLeftChild(), data));
 		}
 		return cur;
 	}
@@ -99,124 +120,80 @@ public class AvlTree<T extends Comparable<T>> implements Serializable {
 			return new Node<T>(data);
 		}
 		int compare = cur.getData().compareTo(data);
-		if(compare < 0) {  //插入在右树上，仅会左旋
-			cur.setRightChild(insert(cur.getRightChild(), data)); //有右
-			if(!cur.isInBalance()) {
-				if(cur.getRightChild().getLeftChild() == null) {
-					cur = rotateRR(cur);
-				}else {
-					cur = rotateRL(cur);
+		if(compare < 0) {  //插入在右树上
+			cur.setRightChild(insert(cur.getRightChild(), data));
+			if(!cur.isInBalance()) { //预计算
+				if(cur.getRightChild().getData().compareTo(data) < 0) {
+					cur = cur.rotateRR();
+				}else if(cur.getRightChild().getData().compareTo(data) > 0) {
+					cur = cur.rotateRL();
 				}
 			}
-		}else if(compare > 0) {//插入在右树上，仅会右旋
+		}else if(compare > 0) {//插入在左树上
 			cur.setLeftChild(insert(cur.getLeftChild(), data));
-			if(!cur.isInBalance()) {
-				if(cur.getLeftChild().getRightChild() == null) {
-					cur = rotateLL(cur); //没有左孩子，简单的转换
+			if(!cur.isInBalance()) { //预计算
+				if(cur.getLeftChild().getData().compareTo(data) > 0) {
+					cur = cur.rotateLL();
+				}else if(cur.getLeftChild().getData().compareTo(data) < 0) {
+					cur = cur.rotateLR();
+				}
+			}
+		}else {
+			System.out.println("元素已经存在");
+		}
+		//调整当前元素高度
+		cur.setHeight(Math.max(cur.getLeftChildHeight(), cur.getRightChildHeight()) + 1);
+		return cur;
+	}
+	public Node<T> remove(Node<T>node, T data, boolean removed) {
+		if(node == null) {
+			return null;
+		}
+		int nodeMinuesData = node.getData().compareTo(data);
+		if(nodeMinuesData > 0) { //左分支
+			node.setLeftChild(remove(node.getLeftChild(), data, removed));
+		}else if(nodeMinuesData < 0){ //右分支
+			node.setRightChild(remove(node.getRightChild(), data, removed));
+		}else {
+			if(node.getLeftChild() == null) {
+				if(node.getRightChild() == null) {
+					return null; //删除叶子
 				}else {
-					cur = rotateLR(cur); //有左孩子
+					//删除只有右子树的节点
+					return node.getRightChild(); 
+				}
+			}else {
+				if(node.getRightChild() == null) {
+					//删除只有左子树的节点
+					return node.getLeftChild(); 
+				}else {
+					//左子树高，就找左子树的最大节点
+					//右子树高，就找右子树最小节点
+					Node<T> killNode = node.getLeftChildHeight() > node.getRightChildHeight()?
+							node.findMax(node.getLeftChild()): node.findMin(node.getRightChild());
+					node = remove(node, killNode.getData(), false); //再次递归删除，子树会调节平衡
+					node.setData(killNode.getData());
+					return node;
 				}
 			}
 		}
-		refreshHeight(this.root);
-		return cur;
-	}
-	/**
-	 * RR旋转
-	 * <pre>
-	 * x
-	 *  \
-	 *   y
-	 *    \
-	 *     z
-	 *-------------
-	 *   y
-	 *  / \
-	 * x   z
-	 * </pre>
-	 * @param node 父杰节点，既然是左旋，则右子树必定不为null,左子树可能为null，可能不为null
-	 * @return 返回最高的右节点
-	 * */
-	public Node<T> rotateRR(Node<T> node) {
-		Node<T> rightChild = node.getRightChild();
-		node.setRightChild(null);// 必须断开，否则互指
-		rightChild.setLeftChild(node);
-		
-		refreshHeight(this.root);
-		
-		return rightChild;
-	}
-	/**
-	 * LR旋转
-	 * <pre>
-	 *   x
-	 *  /
-	 * y
-	 *  \
-	 *   z
-	 *-------------
-	 *    z
-	 *   / \
-	 *  y   x
-	 * </pre>
-	 * x > z > y，所以 z为中
-	 * */
-	public Node<T> rotateLR(Node<T> nodeX){
-		Node<T> nodeY = nodeX.getLeftChild();
-		Node<T> nodeZ = nodeY.getRightChild();
-		nodeZ.setLeftChild(nodeY);
-		nodeZ.setRightChild(nodeX);
-		
-		nodeX.setLeftChild(null);
-		nodeY.setRightChild(null);
-		
-		return nodeZ;
-	}
-	/**
-	 * LL旋转
-	 * <pre>
-	 *     x
-	 *    /
-	 *   y
-	 *  /
-	 * z
-	 *-------------
-	 *   y
-	 *  / \
-	 * z   x
-	 * </pre>
-	 * */
-	public Node<T> rotateLL(Node<T> nodeX){
-		Node<T> nodeY = nodeX.getLeftChild();
-		nodeY.setRightChild(nodeX);
-		
-		nodeX.setLeftChild(null); //清除
-		
-		refreshHeight(this.root);
-		return nodeY;
-	}
-	/**
-	 * RL旋转
-	 * <pre>
-	 * x
-	 *  \
-	 *   y
-	 *  /
-	 * z
-	 *-------------
-	 *    z
-	 *   / \
-	 *  x   y
-	 * </pre>
-	 * */
-	public Node<T> rotateRL(Node<T> nodeX){
-		Node<T> nodeZ = nodeX.getRightChild().getLeftChild(); //选取中心
-		Node<T> nodeY = nodeX.getRightChild();
-		nodeZ.setRightChild(nodeY);
-		nodeY.setLeftChild(null); //清除旧左孩子
-		nodeX.setRightChild(null); //清除旧左孩子
-		nodeZ.setLeftChild(nodeX);
-		return nodeZ;
+		if(!node.isInBalance()) {
+			if(node.getLeftChildHeight() > node.getRightChildHeight()) {
+				if(node.getLeftChild().getLeftChildHeight() > node.getLeftChild().getRightChildHeight()) {
+					node = node.rotateLL();
+				}else {
+					node = node.rotateLR();
+				}
+			}else {
+				if(node.getRightChild().getRightChildHeight() > node.getRightChild().getLeftChildHeight()) {
+					node = node.rotateRR();
+				}else {
+					node = node.rotateRL();
+				}
+			}
+		}
+		node.setHeight(Math.max(node.getLeftChildHeight(), node.getRightChildHeight()) + 1);
+		return node;
 	}
 	public void printStepCopy() {
 		if(this.root == null) {
