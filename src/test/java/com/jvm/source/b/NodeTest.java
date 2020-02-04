@@ -1,11 +1,6 @@
 package com.jvm.source.b;
 
-import java.util.LinkedList;
-import java.util.Queue;
-import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.IntStream;
-
+import org.apache.commons.lang3.SerializationUtils;
 import org.junit.Test;
 
 /**
@@ -16,56 +11,122 @@ import org.junit.Test;
  * @版本:V1.0
  */
 public class NodeTest {
-	AtomicInteger incrementId = new AtomicInteger(1);
 	/**
-	 * 创建一层叶子，通过递归调用就是创建一颗B树
-	 * @param layers 层数
+	 * 叶子节点插入元素
 	 * */
-	private void initLayer(Queue<Node> layerNodes, int layers) {
-		if(layers == 0 ) return;
-		Queue<Node> nextLayerNodes = new LinkedList<>();
-		while(!layerNodes.isEmpty()) {
-			Node node = layerNodes.poll();
-			for(int i=0; i < node.getItemSize() + 1; i++) {
-				Node newNode;
-				//叶子有 1 ~ Node.MAX_NODE - 1 个键
-				nextLayerNodes.offer(newNode = createNode(1 + new Random().nextInt(Node.MAX_NODE - 1)));
-				node.connectChild(i, newNode);
-			}
-		}
-		initLayer(nextLayerNodes, layers - 1);
-	}
-	/**根据size创建一个key数量为size的叶子*/
-	private Node createNode(int size) {
-		Node node = new Node(incrementId.getAndIncrement());
-		size--;
-		IntStream.range(0, size).forEach(__->{
-			node.insertItem(incrementId.getAndIncrement());
-		});
-		return node;
-	}
-	public void postInJson(Node root) throws Exception{
-		DebuggerWebsocket.post(PrintableUtils.postTravel(root, new AtomicInteger(0), 0));
-	}
 	@Test
-	public void s() throws Exception{
+	public void cloneByInsertLeaf(){
+		Node templateNode = new Node(
+				new int[] {0, 10, 20},
+				new Node[] {null, null, null},
+				2);
+		//最左边添加元素
+		Node node = SerializationUtils.clone(templateNode);
+		node.cloneByInsert(new Node(4));
+		assert node.getKey(1) == 4;
+		assert node.getKey(2) == 10;
+		assert node.getKey(3) == 20;
 		
-		//SerializationUtils.serialize(root, new FileOutputStream(new File("./abcd.dat")));
-		//Node root = SerializationUtils.deserialize(new FileInputStream("./abcd.dat"));
-		//printInJson(root);
-		Debugger.startDaemon(()->{
-			incrementId.set(1);
-			Node root = createNode(Node.MAX_NODE - 1);
-			System.out.println(root);
-			Queue<Node>layerNodes = new LinkedList<>();
-			layerNodes.offer(root);
-			initLayer(layerNodes, 2);
-			System.out.println("start---");
-			System.out.println();
-			postInJson(root);
-		}).join();
+		//插入已存在的元素
+		node = SerializationUtils.clone(templateNode);
+		node.cloneByInsert(new Node(10));
+		assert node.getKey(1) == 10;
+		assert node.getKey(2) == 20;
 		
-		//postTravel(root, new AtomicInteger(0), 1);
+		//插入中间的元素
+		node = SerializationUtils.clone(templateNode);
+		node.cloneByInsert(new Node(11));
+		assert node.getKey(1) == 10;
+		assert node.getKey(2) == 11;
+		assert node.getKey(3) == 20;
+		
+		//插入右边的元素
+		node = SerializationUtils.clone(templateNode);
+		node.cloneByInsert(new Node(30));
+		assert node.getKey(1) == 10;
+		assert node.getKey(2) == 20;
+		assert node.getKey(3) == 30;
+		
+		//插入分裂
+		node = SerializationUtils.clone(templateNode);
+		node.cloneByInsert(new Node(30));
+		node.cloneByInsert(new Node(40));
+		node.cloneByInsert(new Node(50));
+		node = node.cloneByInsert(new Node(60));
+		assert node.getKey(1) == 30;
+		assert node.getChild(0).getKey(1) == 10;
+		assert node.getChild(0).getKey(2) == 20;
+		assert node.getChild(1).getKey(1) == 40;
+		assert node.getChild(1).getKey(2) == 50;
+		assert node.getChild(1).getKey(3) == 60;
+		
+	}
+	/**
+	 * 内部节点的插入
+	 * */
+	@Test
+	public void cloneByInsertInternal() {
+		Node templateNode = new Node(
+				new int[] {0, 10, 20},
+				new Node[] {new Node(5), new Node(15), new Node(25)},
+				2);
+		//最左
+		Node node = SerializationUtils.clone(templateNode);
+		node.cloneByInsert(new Node(new int[] {0, 8}, 
+				new Node[] {new Node(5), new Node(9)},
+				1));
+		assert node.getKey(0) == 0;
+		assert node.getChild(0).getKey(1) == 5;
+		assert node.getKey(1) == 8;
+		assert node.getChild(1).getKey(1) == 9;
+		assert node.getKey(2) == 10;
+		assert node.getChild(2).getKey(1) == 15;
+		assert node.getKeyNum() == 3;
+		
+		//中间
+		node = SerializationUtils.clone(templateNode);
+		node.cloneByInsert(new Node(new int[] {0, 15}, 
+				new Node[] {new Node(11), new Node(19)},
+				1));
+		assert node.getKeyNum() == 3;
+		assert node.getKey(1) == 10;
+		assert node.getChild(1).getKey(1) == 11;
+		assert node.getKey(2) == 15;
+		assert node.getChild(2).getKey(1) == 19;
+		
+		//右边
+		node = SerializationUtils.clone(templateNode);
+		node.cloneByInsert(new Node(new int[] {0, 30}, 
+				new Node[] {new Node(29), new Node(100)},
+				1));
+		assert node.getKeyNum() == 3;
+		assert node.getKey(2) == 20;
+		assert node.getChild(2).getKey(1) == 29;
+		assert node.getKey(3) == 30;
+		assert node.getChild(3).getKey(1) == 100;
+		//分裂左
+		node = SerializationUtils.clone(templateNode);
+		node.cloneByInsert(new Node(new int[] {0, 30}, 
+				new Node[] {new Node(25), new Node(35)},
+				1));
+		node.cloneByInsert(new Node(new int[] {0, 40}, 
+				new Node[] {new Node(35), new Node(35)},
+				1));
+		node.cloneByInsert(new Node(new int[] {0, 50}, 
+				new Node[] {new Node(45), new Node(55)},
+				1));
+		node = node.cloneByInsert(new Node(new int[] {0, 8}, 
+				new Node[] {new Node(3), new Node(9)},
+				1));
+		assert node.getKeyNum() == 1;
+		assert node.getKey(1) == 20;
+		assert node.getChild(0).getChild(0).getKey(1) == 3; //左孩子
+		assert node.getChild(0).getKey(1) == 8;
+		assert node.getChild(0).getChild(1).getKey(1) == 9;
+		assert node.getChild(1).getChild(0).getKey(1) == 25; //右孩子
+		
+		
+		
 		
 		
 		

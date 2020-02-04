@@ -1,5 +1,9 @@
 package com.jvm.source.b;
 
+import java.io.FileInputStream;
+
+import org.apache.commons.lang3.SerializationUtils;
+
 /**
  * @功能说明:
  * @创建者: Pom
@@ -12,13 +16,12 @@ public interface BTreeTest {
 		BTree tree23 = new BTree();
 		Debugger.startDaemon(()->{
 			BTree tree = new BTree();
+			tree.setRoot(SerializationUtils.deserialize(new FileInputStream("./abcd.dat")));
 			Debugger.set("tree", tree);
-			tree.insert(10);
-			tree.insert(20);
-			tree.insert(30);
-			tree.insert(40);
-			tree.insert(50);
 			System.out.println();
+			
+			//Node.cloneByInsertTest();
+			
 			
 		}).join();
 	}

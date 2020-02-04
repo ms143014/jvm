@@ -20,6 +20,14 @@ public class PrintableUtils {
 	 * 方便调试的Map用于收集PrintableNode，快速定位节点
 	 * */
 	private static Map<Integer, PrintableNode> map = new HashMap<>();
+	
+	public static void postTravel(Node node) {
+		try {
+			DebuggerWebsocket.post(postTravel(node, new AtomicInteger(0), 0));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 	/**
 	 * 后续层级遍历
 	 * @param height 树的高度
@@ -31,10 +39,10 @@ public class PrintableUtils {
 		if(node.isLeaf()) {
 			int beforeLeafX = leafX.get(); //用于计算节点宽度
 			
-			for(int j=0; j< node.getItemSize(); j++) {
+			for(int j=0; j < node.getKeyNum(); j++) {
 				
 				
-				int cellValue = node.getItem(j);
+				int cellValue = node.getKey(j + 1);
 				if(j==0) {map.put(cellValue, printableNode);}
 				
 				PrintableItem printableItem = new PrintableItem();
@@ -57,29 +65,30 @@ public class PrintableUtils {
 		}else {
 			int widthSum = 0;
 			List<PrintableNode> childs = printableNode.getChilds();
-			for(int i=0; i < node.getItemSize() + 1; i++) {
+			for(int i=0; i < node.getKeyNum(); i++) {
 				
 				
 				childs.add(postTravel(node.getChild(i), leafX, depth + 1));
-				
-				if(i < node.getItemSize()) {
-					int cellValue = node.getItem(i);
-					
-					if(i==0) {map.put(cellValue, printableNode);}
-					
-					PrintableItem printableItem = new PrintableItem();
-					printableItem.setY(100 * depth);
-					printableItem.setValue(cellValue);
-					//字符宽度是10px
-					//数字之间留一点间隔 
-					printableItem.setWidth(10 * String.valueOf(cellValue).length() + PrintableNode.ITEM_SPACING);
-					printableNode.getItems().add(printableItem);
-					
-					widthSum += 10 * String.valueOf(cellValue).length(); //字符宽度是10px
-					
-					widthSum += PrintableNode.ITEM_SPACING;
-					
+				if(i == node.getKeyNum() -1) {
+					childs.add(postTravel(node.getChild(i + 1), leafX, depth + 1)); //最右边的孩子
 				}
+				
+				int cellValue = node.getKey(i + 1);
+				
+				if(i==0) {map.put(cellValue, printableNode);}
+				
+				PrintableItem printableItem = new PrintableItem();
+				printableItem.setY(100 * depth);
+				printableItem.setValue(cellValue);
+				//字符宽度是10px
+				//数字之间留一点间隔 
+				printableItem.setWidth(10 * String.valueOf(cellValue).length() + PrintableNode.ITEM_SPACING);
+				printableNode.getItems().add(printableItem);
+				
+				widthSum += 10 * String.valueOf(cellValue).length(); //字符宽度是10px
+				
+				widthSum += PrintableNode.ITEM_SPACING;
+					
 			}
 			//孩子全部创建完毕
 			PrintableItem firstItem = childs.get(0).getItems().get(0);

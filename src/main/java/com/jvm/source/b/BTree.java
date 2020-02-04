@@ -1,5 +1,9 @@
 package com.jvm.source.b;
 
+import org.apache.commons.lang3.SerializationUtils;
+
+import com.jvm.source.b.Node.SearchResult;
+
 /**
  * @功能说明:
  * @创建者: Pom
@@ -9,86 +13,145 @@ package com.jvm.source.b;
  */
 public class BTree {
 	private Node root = null;
+	public void setRoot(Node root) {
+		this.root = root;
+	}
 	public Node getRoot() {
 		return root;
 	}
-	public void insert(int data) {
+	public void rendered() throws Exception {
+		if(this.root == null) {
+			System.out.println("空树，不打印");
+			return;
+		}
+		PrintableUtils.postTravel(this.root);
+	}
+	public void insert(int key) {
 		if(root == null) {
-			this.root = new Node(data);
+			this.root = new Node(key);
 		}else {
-			Node leaf = find(this.root, data); //先找到叶子
-			insert(leaf, data);
+			this.root = insert(this.root, key);
 		}
 	}
-	private Node insert(Node sourceNode, int data) {
-		if(sourceNode.isFull()) {
-			int findIndex = -1;
-			for(int i=0; i< sourceNode.getItemSize(); i++, findIndex++) {
-				if(data < sourceNode.getItem(i)) {
+	private Node insert(Node node, int key) {
+		if(node == null) {
+			return new Node(key);
+		}else {
+			Node child = null;
+			int i;
+			for(i = 0; i < node.getKeyNum(); i++) {
+				int nodeKey = node.getKey(i + 1);
+				if(key < nodeKey) {
+					child = node.getChild(i); //左孩子
 					break;
-				}else if(data == sourceNode.getItem(i)){
-					return null;
+				}else if(key == nodeKey){
+					System.out.println("元素已经存在");
+					return node;
+				}else { //
+					//一般不用管，直接下一个
+					if(i == node.getKeyNum() - 1) { //比最后一个大
+						child = node.getChild(i + 1); //右孩子
+					}
 				}
 			}
-			if(findIndex == -1) { //最左
-				Node left = new Node(data);
-				Node parent = new Node(sourceNode.getItem(0)); //后截着的一个元素
-				Node right = new Node();
-				for(int i=1; i< sourceNode.getItemSize(); i++) { //下一个开始后面的所有
-					right.insertItem(sourceNode.getItem(i));
+			Node newChild = insert(child, key);
+			if(child != newChild) {
+				return node.cloneByInsert(newChild);
+			}else {
+				return node;
+			}
+		}
+	}
+	public void t0() {
+		SearchResult searchResult = Debugger.get("sss");
+		Node node = SerializationUtils.clone(searchResult.getNode());
+		if(node.isLeaf()) {
+			if(node.getKeyNum() > 1) {
+				int i;
+				for(i = searchResult.getIndex(); i < node.getKeyNum(); i++) {
+					node.setKey(i, node.getKey(i + 1));
+					node.setChild(i, node.getChild(i + 1));
 				}
-				Node leafParent = sourceNode.getParent();
-				if(leafParent == null) {
-					leafParent = parent;
-					leafParent.connectChild(0, left);
-					leafParent.connectChild(1, right);
-					this.root = leafParent;
+				node.setKey(i, 0);
+				node.setChild(i, null);
+				node.minusKeyNum();
+			}else {
+				
+			}
+		}
+		System.out.println(node);
+		
+	}
+	public void remove(int key) {
+		SearchResult searchResult = new SearchResult();
+		search(this.root, key, searchResult);
+		if(searchResult.isFound()) {
+			Node node = searchResult.getNode();
+			if(node.isLeaf()) {
+				if(node.getKeyNum() > 1) {
+					int i;
+					for(i = searchResult.getIndex(); i < node.getKeyNum(); i++) {
+						node.setKey(i, node.getKey(i + 1));
+						node.setChild(i, node.getChild(i + 1));
+					}
+					node.setKey(i, 0);
+					node.setChild(i, null);
+					node.minusKeyNum();
 				}else {
 					
 				}
-			}else if(findIndex == sourceNode.getItemSize() - 1) { //最右
-				Node left = new Node();
-				for(int i=0; i< sourceNode.getItemSize() - 1; i++) { //下一个开始后面的所有
-					left.insertItem(sourceNode.getItem(i));
-				}
-				Node parent = new Node(sourceNode.getItem(sourceNode.getItemSize() -1)); //最后一个为中
-				Node right = new Node(data);
-				Node leafParent = sourceNode.getParent();
-				if(leafParent == null) {
-					leafParent = parent;
-					this.root = leafParent;
-					leafParent.connectChild(0, left);
-					leafParent.connectChild(1, right);
-					this.root = leafParent;
-				}else {
-					int upToParentIndex = leafParent.insertItem(sourceNode.getItem(sourceNode.getItemSize() -1));
-					leafParent.connectChild(upToParentIndex, left);
-					leafParent.connectChild(upToParentIndex + 1, right);
-				}
-				
 			}
-			System.out.println("findIndex: " + findIndex);
 		}else {
-			sourceNode.insertItem(data);
-			System.out.println("...");
+			System.out.printf("元素%d不存在\n", key);
 		}
-		return null;
+	}
+	/**
+	 * 查找关键字将会在哪一个地方插入
+	 * 0表示最左边类似string的 indexOf
+	 * itemSize +1 表示最右边
+	 * [-][10][20][30]
+	 * insert
+	 * 	5	0
+	 * 	10	0 相等
+	 * 	15	1
+	 *  20	1 相等
+	 *  25	2
+	 *  30	2 相等
+	 *  31	3
+	 * */
+	public static int searchForInsert(Node node, int key) {
+		int i;
+		for(i=0; i < node.getKeyNum(); i++) {
+			if(key <= node.getData()[i + 1])
+				break;
+		}
+		return i;
 	}
 	/**寻找叶子节点*/
-	public Node find(int data) {
-		return find(this.root, data);
+	public SearchResult search(int data) {
+		SearchResult searchResult = new SearchResult();
+		search(this.root, data, searchResult);
+		return searchResult;
 	}
-	private Node find(Node node, int data) {
-		if(node.isLeaf() ) {
-			return node;
-		}
+	private static void search(Node node, int key, SearchResult searchResult) {
+		if(searchResult.isFound() || node == null) //已经找到或者没有找到都返回
+			return;
 		//从左到右比对 
-		for(int i=0; i < node.getItemSize(); i++) {
-			if(data < node.getItem(i)) {
-				return find(node.getChild(i), data);
+		for(int i = 0; i < node.getKeyNum(); i++) {
+			int nodeKey = node.getKey(i + 1);
+			if(key < nodeKey) {
+				search(node.getChild(i), key, searchResult);
+			}else if(key == nodeKey) {
+				searchResult.setIndex(i + 1);
+				searchResult.setFound(true);
+				searchResult.setNode(node);
+				break;
+			}else {
+				if(i == node.getKeyNum() - 1) {
+					search(node.getChild(i + 1), key, searchResult); //最后一个元素的右孩子
+				}
 			}
 		}
-		return find(node.getLastChild(), data); //比所有都大，最后一个节点
 	}
 	
 }
