@@ -1,6 +1,7 @@
 package com.jvm.source.b;
 
 import java.io.Serializable;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @功能说明:
@@ -139,16 +140,30 @@ public class Node implements Serializable{
 		}
 	}
 	/**
-	 * 寻找key的下标，找不到则为-1
+	 * 寻找key的下标
+	 * 如果找不到， 就寻找孩子指针
+	 * @param key 对比的键
+	 * @param index <p>返回继续向哪一个孩子寻找</p>
+	 * 	<p>如果小于第1个元素，则从最左的孩子找[0]</p>
+	 *  <p>如果小于第2个元素，则从第2个元素的最左的孩子找[1]</p>
+	 * 	<p>如果大于最后一个元素，则最后元素的右孩子找</p>
 	 * */
-	public int find(int key) {
+	public boolean find(int key, AtomicInteger index) {
 		for(int i = 0; i < this.keyNum; i++) {
-			int nodeKey = this.getKey(i + 1); 
-			if(key == nodeKey) {
-				return i + 1;
+			int nodeKey = this.getKey(i + 1);
+			if(key < nodeKey) {
+				index.set(i);	//小于，所以是左孩子
+				break;
+			}else if(key == nodeKey) {	//等于不好说
+				index.set(i + 1);
+				return true;
+			}else {
+				if(i == this.keyNum - 1) {
+					index.set(i + 1);
+				}
 			}
 		}
-		return -1;
+		return false;
 	}
 	/**最靠左边的兄弟*/
 	public Node getLeftSibling() {
@@ -161,6 +176,15 @@ public class Node implements Serializable{
 			}
 		}
 		return i==0 ? null:this.parent.childs[i -1];
+	}
+	/**当前元素被它的右孩子的最小值替代，也就是直接后继*/
+	public void subsitution(int index) {
+		assert this.getChild(index) != null;
+		Node cursor = this.getChild(index);
+		do {
+			this.setKey(index, cursor.getKey(1));
+			cursor = cursor.getChild(0);
+		}while(cursor != null);
 	}
 	public int height(Node node) {
 		if(!node.isLeaf()) {
@@ -248,8 +272,6 @@ public class Node implements Serializable{
 		}else {
 			return insertTo;
 		}
-		
-		
 	}
 	/**
 	 * 节点分割，节点满了，抽取中间的为parent，

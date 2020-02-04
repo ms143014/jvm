@@ -18,6 +18,10 @@ public interface BTreeTest {
 			BTree tree = new BTree();
 			tree.setRoot(SerializationUtils.deserialize(new FileInputStream("./abcd.dat")));
 			Debugger.set("tree", tree);
+			/*Debugger.set("sss", tree.search(77));
+			tree.t0();*/
+			//tree.search(222).getNode().subsitution(3);
+			//tree.remove(797);
 			System.out.println();
 			
 			//Node.cloneByInsertTest();

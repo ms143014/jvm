@@ -1,5 +1,7 @@
 package com.jvm.source.b;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.commons.lang3.SerializationUtils;
 
 import com.jvm.source.b.Node.SearchResult;
@@ -63,34 +65,26 @@ public class BTree {
 		}
 	}
 	public void t0() {
-		SearchResult searchResult = Debugger.get("sss");
-		Node node = SerializationUtils.clone(searchResult.getNode());
-		if(node.isLeaf()) {
-			if(node.getKeyNum() > 1) {
-				int i;
-				for(i = searchResult.getIndex(); i < node.getKeyNum(); i++) {
-					node.setKey(i, node.getKey(i + 1));
-					node.setChild(i, node.getChild(i + 1));
-				}
-				node.setKey(i, 0);
-				node.setChild(i, null);
-				node.minusKeyNum();
-			}else {
-				
-			}
-		}
-		System.out.println(node);
+		AtomicInteger findIndex = new AtomicInteger(-1);
+		Node node = SerializationUtils.clone(Debugger.<SearchResult>get("sss").getNode()); 
+		boolean find = node.find(100, findIndex);
+		System.out.println(find + " index: " + findIndex);
 		
 	}
-	public void remove(int key) {
-		SearchResult searchResult = new SearchResult();
-		search(this.root, key, searchResult);
-		if(searchResult.isFound()) {
-			Node node = searchResult.getNode();
+	public boolean remove(int key) {
+		return remove(this.root, key);
+	}
+	private boolean remove(Node node, int key) {
+		if(node == null) {
+			return false;
+		}
+		AtomicInteger findndex = new AtomicInteger(-1);
+		boolean find = node.find(key, findndex);
+		if(find) {
 			if(node.isLeaf()) {
-				if(node.getKeyNum() > 1) {
+				if(node.getKeyNum() > 1) { //多于一个元素，可以直接删除
 					int i;
-					for(i = searchResult.getIndex(); i < node.getKeyNum(); i++) {
+					for(i = findndex.get(); i < node.getKeyNum(); i++) {
 						node.setKey(i, node.getKey(i + 1));
 						node.setChild(i, node.getChild(i + 1));
 					}
@@ -100,10 +94,19 @@ public class BTree {
 				}else {
 					
 				}
+			}else { //删除中间节点
+				node.subsitution(findndex.get()); //替换
+				remove(node.getChild(findndex.get()), node.getKey(findndex.get())); //删除直接后继节点
 			}
-		}else {
-			System.out.printf("元素%d不存在\n", key);
+		}else { //本节点找不到
+			find = remove(node.getChild(findndex.get()), key);
 		}
+		//本node以及它的所有子树找到并且删除了数据
+		if(find) { //如果找不到就不需要调整平衡
+			
+		}
+		//代码执行到这里代表，找不到，找到了已经删除了，删除的地方就是当前这个node
+		return find;
 	}
 	/**
 	 * 查找关键字将会在哪一个地方插入
