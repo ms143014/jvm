@@ -4,8 +4,6 @@ import java.io.FileInputStream;
 
 import org.apache.commons.lang3.SerializationUtils;
 
-import com.jvm.source.rbtree.RBNode.Color;
-
 /**
  * @功能说明:
  * @创建者: Pom
