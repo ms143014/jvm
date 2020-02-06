@@ -16,9 +16,9 @@ public class RBTreeTest {
 		Debugger.startDaemon(()->{
 			RBTree<Integer> tree = new RBTree<>();
 			
-			tree =  SerializationUtils.deserialize(new FileInputStream("./abcd.dat"));
+			//tree =  SerializationUtils.deserialize(new FileInputStream("./abcd.dat"));
 			Debugger.set("tree", tree);
-			
+			//tree.insert(185);
 			System.out.println();
 		}).join();;
 	}

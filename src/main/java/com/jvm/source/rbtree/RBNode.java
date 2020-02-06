@@ -146,9 +146,16 @@ public class RBNode<T extends Comparable<T>> implements Serializable{
 		return this.rotateRR();
 	}
 	/**
-	 * 修正双红
+	 * 左孩子是不是红色
 	 * */
-	public void solveDoubleRed() {
+	public boolean isLeftRed() {
+		return this.left != null && this.left.color == Color.RED;
+	}
+	/**
+	 * 右孩子是不是红色
+	 * */
+	public boolean isRightRed() {
+		return this.right != null && this.right.color == Color.RED;
 	}
 	/**
 	 * 丢失黑色修正

@@ -31,66 +31,42 @@ public class RBTree<T extends Comparable<T>> implements Serializable{
 	}
 	private RBNode<T> insert(RBNode<T> node, T data) {
 		if(node == null) {
-			RBNode<T> newNode = new RBNode<T>(data);
 			this.size++;
-			return newNode;
+			return new RBNode<T>(data);
 		} else if(node.eq(data)) {
 			System.out.println("键相等，更新值即可");
 		} else{
-			RBNode<T> child;
 			if(node.lt(data)) { //右分支
-				child = node.right = insert(node.right, data);
-				child.parent = node;
+				node.right = insert(node.right, data);
+				node.right.parent = node;
 			}else/* if(node.gt(data))*/{ //左分支
-				child = node.left = insert(node.left, data);
-				child.parent = node;
+				node.left = insert(node.left, data);
+				node.left.parent = node;
 			}
 			//如果child是黑色， 那就不用调了，因为之前已经平衡的，只有child是红色才有可能打破平衡
 			RBNode<T> left = node.left;
 			RBNode<T> right = node.right;
-			if(left == null) {
-				if(right != null && right.color == Color.RED) {
-					if(right.left != null && right.left.color == Color.RED) {
-						//RR-1 RL
-						node = node.rotateRL();
-					}else if(right.right != null && right.right.color == Color.RED){
-						//RR-1 RR
-						node = node.rotateRR();
-					}
+			if(node.isLeftRed() && node.isRightRed() &&
+				(left.isLeftRed() || left.isRightRed() || right.isLeftRed() || right.isRightRed())) {
+				//RR-2
+				node.color = Color.RED;
+				left.color = Color.BLACK;
+				right.color = Color.BLACK;
+			}else if(node.isLeftRed() && (right == null || right.color == Color.BLACK)) {
+				if(left.isLeftRed()) {
+					//RR-1 LL
+					node = node.rotateLL();
+				}else if(left.isRightRed()) {
+					//RR-1 LR
+					node = node.rotateLR();
 				}
-			}else {
-				//左黑右红
-				if(left.color == Color.BLACK) {
-					if(right != null && right.color == Color.RED) {
-						//左黑右红
-						if(right.left != null && right.left.color == Color.RED) { //孙左红
-							//RR-1 RL
-							node = node.rotateRL();
-						}else if(right.right != null && right.right.color == Color.RED) { //孙右红
-							//RR-1 RR
-							node = node.rotateRR();
-						}
-					}
-				}else if(left.color == Color.RED) {
-					if(right == null || right.color == Color.BLACK) {
-						if(left.left != null && left.left.color == Color.RED) {
-							//RR-1 LL
-							node = node.rotateLL();
-						}else if(left.right != null && left.right.color == Color.RED){
-							//RR-1 LR
-							node = node.rotateLR();
-						}
-					}else if(right != null && right.color == Color.RED){
-						if((left.left != null && left.left.color == Color.RED) ||
-							(left.right != null && left.right.color == Color.RED) ||
-							(right.left != null && right.left.color == Color.RED) ||
-							(right.right != null && right.right.color == Color.RED)) {
-							//RR-2
-							node.color = Color.RED;
-							left.color = Color.BLACK;
-							right.color = Color.BLACK;
-						}
-					}
+			}else if(node.isRightRed() && (left == null || left.color == Color.BLACK)) {
+				if(right.isLeftRed()) {
+					//RR-1 RL
+					node = node.rotateRL();
+				}else if(right.isRightRed()) {
+					//RR-1 RR
+					node = node.rotateRR();
 				}
 			}
 		}
