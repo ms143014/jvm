@@ -41,9 +41,6 @@ public class RBNode<T extends Comparable<T>> implements Serializable{
 	public RBNode<T> getLeft() {
 		return left;
 	}
-	public void setLeft(RBNode<T> left) {
-		this.left = left;
-	}
 	public RBNode<T> getRight() {
 		return right;
 	}
@@ -54,6 +51,21 @@ public class RBNode<T extends Comparable<T>> implements Serializable{
 		this.color = color;
 	}
 	///////////////////
+	/**设置右孩子并绑定父子关系*/
+	public void setRight(RBNode<T> right) {
+		this.right = right;
+		if(this.right != null) {
+			this.right.parent = this;
+		}
+	}
+	/**设置左孩子并绑定父子关系*/
+	public void setLeft(RBNode<T> left) {
+		this.left = left;
+		if(this.left != null) {
+			this.left.parent = this;
+		}
+	}
+	
 	public boolean gt(T data) {
 		return this.data.compareTo(data) > 0;
 	}
@@ -69,13 +81,13 @@ public class RBNode<T extends Comparable<T>> implements Serializable{
 	public boolean lt(RBNode<T> node) {
 		return this.data.compareTo(node.data) < 0;
 	}
-	public RBNode<T> broder() {
+	public RBNode<T> brother() {
 		return this.parent.left == this? this.parent.right: this.parent.left; 
 	}
 	public RBNode<T> rotateLL() {
 		RBNode<T> left = this.left;
-		this.left = left.right;
-		left.right = this;
+		this.setLeft(left.right);
+		left.setRight(this);
 		
 		left.color = Color.BLACK;
 		this.color = Color.RED;
@@ -102,17 +114,20 @@ public class RBNode<T extends Comparable<T>> implements Serializable{
 		RBNode<T> node10 = this.left;
 		RBNode<T> node15 = node10.right;
 		
-		node10.right = node15.left;
-		node15.left = node10;
+		node10.setRight(node15.left);
+		node15.setLeft(node10);
 		
-		this.left = node15;
+		this.setLeft(node15);;
 		
 		return this.rotateLL();
 	}
+	/**
+	 * 插入和删除都适用
+	 * */
 	public RBNode<T> rotateRR() {
 		RBNode<T> right = this.right;
-		this.right = right.left;
-		right.left = this;
+		this.setRight(right.left);
+		right.setLeft(this);
 		
 		right.color = Color.BLACK;
 		this.color = Color.RED;
@@ -138,12 +153,30 @@ public class RBNode<T extends Comparable<T>> implements Serializable{
 		RBNode<T> node30 = this.right;
 		RBNode<T> node25 = node30.left;
 		
-		node30.left = node25.right;
-		node25.right = node30;
+		node30.setLeft(node25.right);
+		node25.setRight(node30);
 		
-		this.right = node25;
+		this.setRight(node25);
 		
 		return this.rotateRR();
+	}
+	/**
+	 * L旋，不改变颜色
+	 * */
+	public RBNode<T> rotateLSimple() {
+		RBNode<T> left = this.left;
+		this.setLeft(left.right);
+		left.setRight(this);
+		return left;
+	}
+	/**
+	 * R旋，不改变颜色
+	 * */
+	public RBNode<T> rotateRSimple() {
+		RBNode<T> right = this.right;
+		this.setRight(right.left);
+		right.setLeft(this);
+		return right;
 	}
 	/**
 	 * 左孩子是不是红色
@@ -156,6 +189,24 @@ public class RBNode<T extends Comparable<T>> implements Serializable{
 	 * */
 	public boolean isRightRed() {
 		return this.right != null && this.right.color == Color.RED;
+	}
+	/**
+	 * 是否是parent的左孩子
+	 * */
+	public boolean isOnLeft() {
+		if(this.parent == null) {
+			return false;
+		}
+		return this.parent.left == this;
+	}
+	/**
+	 * 是否是parent的右孩子
+	 * */
+	public boolean isOnRight() {
+		if(this.parent == null) {
+			return false;
+		}
+		return this.parent.right == this;
 	}
 	/**
 	 * 丢失黑色修正

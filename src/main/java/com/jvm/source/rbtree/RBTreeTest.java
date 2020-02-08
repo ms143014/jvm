@@ -15,10 +15,13 @@ public class RBTreeTest {
 	public static void main(String[] args) throws Exception{
 		Debugger.startDaemon(()->{
 			RBTree<Integer> tree = new RBTree<>();
-			
-			//tree =  SerializationUtils.deserialize(new FileInputStream("./abcd.dat"));
+//			tree =  SerializationUtils.deserialize(new FileInputStream("./abcd.dat"));
 			Debugger.set("tree", tree);
-			//tree.insert(185);
+			//tree.rendered();
+			//tree.remove(560);
+//			tree.remove(859);
+//			tree.rendered();
+//			tree.removes(468);
 			System.out.println();
 		}).join();;
 	}

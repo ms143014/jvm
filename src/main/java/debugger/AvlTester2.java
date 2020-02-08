@@ -2,6 +2,7 @@ package debugger;
 
 import com.jvm.source.b.BTree;
 import com.jvm.source.b.Node;
+import com.jvm.source.rbtree.RBTree;
 
 /**
  * @功能说明:
@@ -10,12 +11,13 @@ import com.jvm.source.b.Node;
  * @公司名称: 180830.com
  * @版本:V1.0
  */
-public interface AvlTester {
+public interface AvlTester2 {
 	/**
-	 * debugger.AvlTester.t0()
+	 * debugger.AvlTester2.t0(tree)
 	 */
-	public static void t0(Node root) throws Exception {
+	public static void t0(RBTree<Integer> tree) throws Exception {
 		new Thread(()->{
+			tree.remove(582);
 		}) .start();
 	}
 }
