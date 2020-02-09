@@ -2,11 +2,14 @@ package com.jvm.source.rbtree;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+
+import org.apache.commons.lang3.SerializationUtils;
 
 import com.jvm.source.rbtree.RBNode.Color;
 import com.jvm.source.rbtree.RBPrintableNode;
@@ -31,6 +34,7 @@ public class RBTree<T extends Comparable<T>> implements Serializable{
 		for(T data: datas) {
 			System.out.println("插入的新值是:" + data);
 			this.root = insert(this.root, data, new AtomicBoolean(false));
+			this.root.parent = null;
 			this.root.color = Color.BLACK;
 		}
 	}
@@ -127,6 +131,7 @@ public class RBTree<T extends Comparable<T>> implements Serializable{
 			find = scape;
 		}
 		if(find.parent == null) {
+			find.parent = null;
 			this.root = null;
 		}else {
 			lostBlackFix(find);
@@ -137,8 +142,8 @@ public class RBTree<T extends Comparable<T>> implements Serializable{
 				find.parent.right = null;
 			}
 			find.parent = null;
-			this.size--;
 		}
+		this.size--;
 		System.out.printf("%d <= 本次删除键\n", find.getData());
 		return true;
 	}
@@ -155,7 +160,10 @@ public class RBTree<T extends Comparable<T>> implements Serializable{
 		RBNode<T> brother = node.brother();
 		
 		if(node.color == Color.BLACK) {
-			Consumer<RBNode<T>> parentRebinder = parent.isOnLeft()? grandParent::setLeft : grandParent::setRight;
+			Consumer<RBNode<T>> parentRebinder = null; //当parent是root的时候，祖父节点就是null，这个Consumer就是null
+			if(grandParent != null) {
+				parentRebinder = parent.isOnLeft()? grandParent::setLeft : grandParent::setRight;
+			}
 			/*兄弟节点为红色，那parent必定位黑色*/
 			if(/*parent.color == Color.BLACK && */brother.color == Color.RED) { 
 				System.out.println("LB-1 父黑 兄红");
@@ -163,11 +171,16 @@ public class RBTree<T extends Comparable<T>> implements Serializable{
 				RBNode<T> ret;
 				if(node.isOnLeft()) {
 					//R
-					parentRebinder.accept(ret = parent.rotateRSimple());
-					
+					ret = parent.rotateRSimple();
 				}else {
 					//L
-					parentRebinder.accept(ret = parent.rotateLSimple());
+					ret = parent.rotateLSimple();
+				}
+				if(parentRebinder == null) { //根检查
+					this.root = ret;
+					ret.parent = null;
+				}else {
+					parentRebinder.accept(ret);
 				}
 				parent.color = Color.RED; //这个其实是brother担当的
 				ret.color = Color.BLACK;
@@ -187,7 +200,7 @@ public class RBTree<T extends Comparable<T>> implements Serializable{
 						 *       red  
 						 */
 						parent.right = brother.rotateLSimple();
-						parentRebinder.accept(ret=parent.rotateRSimple());
+						ret=parent.rotateRSimple();
 						//parent原先颜色是不定的删除后在左边 需要染黑它，因为这个位置的颜色原先是黑色
 						ret.left.color = Color.BLACK;
 					}else { 
@@ -197,8 +210,14 @@ public class RBTree<T extends Comparable<T>> implements Serializable{
 						 *   /
 						 * red      
 						 */
-						parentRebinder.accept(ret=parent.rotateLSimple());
+						ret=parent.rotateLSimple();
 						ret.right.color = Color.BLACK;
+					}
+					if(parentRebinder == null) { //根检查
+						this.root = ret;
+						ret.parent = null;
+					}else {
+						parentRebinder.accept(ret);
 					}
 					ret.color = parentColor;
 					return;
@@ -213,7 +232,7 @@ public class RBTree<T extends Comparable<T>> implements Serializable{
 						 *           \
 						 *           red  
 						 */
-						parentRebinder.accept(ret=parent.rotateRSimple());
+						ret=parent.rotateRSimple();
 						ret.left.color = Color.BLACK;
 					}else {
 						/*    parent
@@ -223,8 +242,14 @@ public class RBTree<T extends Comparable<T>> implements Serializable{
 						 *   red      
 						 */
 						parent.left = brother.rotateRSimple();
-						parentRebinder.accept(ret=parent.rotateLSimple());
+						ret=parent.rotateLSimple();
 						ret.right.color = Color.BLACK;
+					}
+					if(parentRebinder == null) { //根检查
+						this.root = ret;
+						ret.parent = null;
+					}else {
+						parentRebinder.accept(ret);
 					}
 					ret.color = parentColor;
 					return;
@@ -238,7 +263,9 @@ public class RBTree<T extends Comparable<T>> implements Serializable{
 			}else {
 				System.out.println("LB-2B 父黑 兄黑 兄无红孩子 递归检查parent");
 				brother.color = Color.RED; //只需要染红兄弟，并递归以parent检查
-				lostBlackFix(parent); //递归检查
+				if(parent.parent != null) { //如果调整后parent是root就不用继续检查了
+					lostBlackFix(parent); //递归检查
+				}
 			}
 		}
 	}
@@ -279,6 +306,69 @@ public class RBTree<T extends Comparable<T>> implements Serializable{
 			DebuggerWebsocket.post(result);
 		} catch (Exception e) {
 			e.printStackTrace();
+		}
+	}
+	/**黑高度*/
+	public int height() {
+		RBNode<T> cursor = this.root;
+		int height = 0;
+		while(cursor != null) {
+			if(cursor.color == Color.BLACK) {
+				height++;
+			}
+			cursor = cursor.left;
+		}
+		return height;
+	}
+	/**
+	 * 取出所有元素，打乱排序，删除，每删除一个节点都检查所有叶子的黑高度是否和树的黑高度一样
+	 * */
+	public void checkTree() {
+		if(this.root != null) {
+			List<T> datas = new ArrayList<>();
+			checkNodeHeight(this.root, 0, height(), datas);
+			System.out.println(datas);
+			Collections.shuffle(datas);
+			System.out.println(datas);
+			for(T data: datas) {
+				Debugger.set("beforeSave", SerializationUtils.clone(this));
+				Debugger.set("beforeSaveDelete", data);
+				remove(data);
+				if(this.root != null) {
+					checkNodeHeight(this.root, 0, height(), null);
+				}
+			}
+			System.out.println("全部删除 root= " + this.root + " size= " + this.size );
+		}
+	}
+	/**
+	 * 检查当前所有叶子的黑高度是否和树的最左分支黑高度一样
+	 * */
+	public void checkTreeHeight() {
+		checkNodeHeight(this.root, 0, height(), null);
+		System.out.println("黑高度检查完成");
+	}
+	private void checkNodeHeight(RBNode<T> node, int height, int treeHeight, List<T> datas) {
+		if(datas != null) {
+			datas.add(node.getData());
+		}
+		if(node.left == null && node.right == null) {
+			if(node.color == Color.BLACK) {
+				height++;
+			}
+			if(height != treeHeight) {
+				throw new RuntimeException("高度不一样");
+			}
+			return;
+		}
+		if(node.color == Color.BLACK) {
+			height++;
+		}
+		if(node.left != null) {
+			checkNodeHeight(node.left, height, treeHeight, datas);
+		}
+		if(node.right != null) {
+			checkNodeHeight(node.right, height, treeHeight, datas);
 		}
 	}
 	/**
@@ -332,6 +422,5 @@ public class RBTree<T extends Comparable<T>> implements Serializable{
 				node.setWidth(eleSpace + ((RBPrintableNode<M>)node.getLeftChild()).getWidth() + ((RBPrintableNode<M>)node.getRightChild()).getWidth());
 			}
 		}
-		//System.out.println(node + "- " +(parent ==null?"空":parent));
 	}
 }

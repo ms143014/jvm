@@ -17,7 +17,7 @@ public interface AvlTester2 {
 	 */
 	public static void t0(RBTree<Integer> tree) throws Exception {
 		new Thread(()->{
-			tree.remove(582);
+			tree.checkTree();
 		}) .start();
 	}
 }
