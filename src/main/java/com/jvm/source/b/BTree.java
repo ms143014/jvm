@@ -1,10 +1,13 @@
 package com.jvm.source.b;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.lang3.SerializationUtils;
 
-import com.jvm.source.b.Node.SearchResult;
+import com.jvm.source.b.BNode.SearchResult;
 
 /**
  * @功能说明:
@@ -13,12 +16,14 @@ import com.jvm.source.b.Node.SearchResult;
  * @公司名称: 180830.com
  * @版本:V1.0
  */
-public class BTree {
-	private Node root = null;
-	public void setRoot(Node root) {
+public class BTree implements Serializable{
+	private static final long serialVersionUID = 2959777260160438463L;
+	private BNode root = null;
+	private int size = 0;
+	public void setRoot(BNode root) {
 		this.root = root;
 	}
-	public Node getRoot() {
+	public BNode getRoot() {
 		return root;
 	}
 	public void rendered() throws Exception {
@@ -30,16 +35,16 @@ public class BTree {
 	}
 	public void insert(int key) {
 		if(root == null) {
-			this.root = new Node(key);
+			this.root = new BNode(key);
 		}else {
 			this.root = insert(this.root, key);
 		}
 	}
-	private Node insert(Node node, int key) {
+	private BNode insert(BNode node, int key) {
 		if(node == null) {
-			return new Node(key);
+			return new BNode(key);
 		}else {
-			Node child = null;
+			BNode child = null;
 			int i;
 			for(i = 0; i < node.getKeyNum(); i++) {
 				int nodeKey = node.getKey(i + 1);
@@ -56,54 +61,90 @@ public class BTree {
 					}
 				}
 			}
-			Node newChild = insert(child, key);
-			if(child != newChild) {
-				return node.cloneByInsert(newChild);
+			BNode newChild = insert(child, key);
+			if(child != newChild) { //分裂
+				return node.cloneByInsert(newChild.getKey(1), (childs, index)->{
+					childs[index] = newChild.getChild(1);
+					childs[index-1] = newChild.getChild(0);
+				});
 			}else {
 				return node;
 			}
 		}
 	}
-	public void t0() {
-		AtomicInteger findIndex = new AtomicInteger(-1);
-		Node node = SerializationUtils.clone(Debugger.<SearchResult>get("sss").getNode()); 
-		boolean find = node.find(100, findIndex);
-		System.out.println(find + " index: " + findIndex);
-		
+	/**移除批量key*/
+	public List<Boolean> remove(int...keys) {
+		List<Boolean> result = new ArrayList<Boolean>();
+		for(int key: keys) {
+			result.add(remove(this.root, key));
+		}
+		return result;
 	}
+	/**移除单个key*/
 	public boolean remove(int key) {
 		return remove(this.root, key);
 	}
-	private boolean remove(Node node, int key) {
+	/**
+	 * 递归移除key
+	 * */
+	private boolean remove(BNode node, int key) {
 		if(node == null) {
 			return false;
 		}
 		AtomicInteger findndex = new AtomicInteger(-1);
 		boolean find = node.find(key, findndex);
 		if(find) {
-			if(node.isLeaf()) {
-				if(node.getKeyNum() > 1) { //多于一个元素，可以直接删除
-					int i;
-					for(i = findndex.get(); i < node.getKeyNum(); i++) {
-						node.setKey(i, node.getKey(i + 1));
-						node.setChild(i, node.getChild(i + 1));
-					}
-					node.setKey(i, 0);
-					node.setChild(i, null);
-					node.minusKeyNum();
-				}else {
-					
+			if(node.isLeaf()) { //寻找到叶子才能删
+				int i;
+				for(i = findndex.get(); i < node.getKeyNum(); i++) {
+					node.setKey(i, node.getKey(i + 1));
+					node.setChild(i, node.getChild(i + 1));
 				}
+				node.setKey(i, 0);
+				node.setChild(i, null);
+				node.decreKeyNum();
 			}else { //删除中间节点
-				node.subsitution(findndex.get()); //替换
+				node.subsitution(findndex.get()); //替换 找前继或者后继随便一个，本例找后继
 				remove(node.getChild(findndex.get()), node.getKey(findndex.get())); //删除直接后继节点
 			}
 		}else { //本节点找不到
 			find = remove(node.getChild(findndex.get()), key);
 		}
+		//放弃本层，在parent层判断
 		//本node以及它的所有子树找到并且删除了数据
-		if(find) { //如果找不到就不需要调整平衡
-			
+		int trackIndex = findndex.get();
+		BNode trackingNode = node.getChild(trackIndex); //trackIndex取值0,1,2,3...keyNum
+		//0 只能找1的右孩子
+		//最后一个 只能找最后一个的左孩子
+		//中间的 先找左，后找右
+		if(trackingNode != null) { //如果找不到就不需要调整平衡
+			if(trackingNode.isOnLowerBound()) {
+				if(trackIndex == 0) { //要删除的Node在最左边，去找第一个key的右孩子看看能不能借
+					BNode brother = node.getChild(1);
+					if(brother.decreOnLowerBound()) { //兄弟没得借
+						node.combine(1);
+					}else { //借兄弟的第一个key
+						node.lendToLeft(1);
+					}
+				}else if(trackIndex == node.getKeyNum()) { //右借左，因为是最后一个元素，只能向左借
+					//最后一个元素的左孩子
+					BNode brother = node.getChild(node.getKeyNum() - 1);
+					if(brother.decreOnLowerBound()) { //没得借  
+						node.combine(trackIndex);
+					}else { //有得借
+						node.lendToRight(node.getKeyNum());
+					}
+				}else { //在中间
+					//左借 右借
+					if(!node.getChild(trackIndex - 1).decreOnLowerBound()) { //左兄有得借
+						node.lendToRight(trackIndex - 1);
+					}else if(!node.getChild(trackIndex + 1).decreOnLowerBound()){ //右兄有得借
+						node.lendToLeft(trackIndex + 1);
+					}else {
+						node.combine(trackIndex); //跟左边组合
+					}
+				}
+			}
 		}
 		//代码执行到这里代表，找不到，找到了已经删除了，删除的地方就是当前这个node
 		return find;
@@ -122,7 +163,7 @@ public class BTree {
 	 *  30	2 相等
 	 *  31	3
 	 * */
-	public static int searchForInsert(Node node, int key) {
+	public static int searchForInsert(BNode node, int key) {
 		int i;
 		for(i=0; i < node.getKeyNum(); i++) {
 			if(key <= node.getData()[i + 1])
@@ -136,7 +177,7 @@ public class BTree {
 		search(this.root, data, searchResult);
 		return searchResult;
 	}
-	private static void search(Node node, int key, SearchResult searchResult) {
+	private static void search(BNode node, int key, SearchResult searchResult) {
 		if(searchResult.isFound() || node == null) //已经找到或者没有找到都返回
 			return;
 		//从左到右比对 

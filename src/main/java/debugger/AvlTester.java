@@ -1,7 +1,7 @@
 package debugger;
 
 import com.jvm.source.b.BTree;
-import com.jvm.source.b.Node;
+import com.jvm.source.b.BNode;
 
 /**
  * @功能说明:
@@ -14,7 +14,7 @@ public interface AvlTester {
 	/**
 	 * debugger.AvlTester.t0()
 	 */
-	public static void t0(Node root) throws Exception {
+	public static void t0(BNode root) throws Exception {
 		new Thread(()->{
 		}) .start();
 	}

@@ -21,7 +21,7 @@ public class PrintableUtils {
 	 * */
 	private static Map<Integer, PrintableNode> map = new HashMap<>();
 	
-	public static void postTravel(Node node) {
+	public static void postTravel(BNode node) {
 		try {
 			DebuggerWebsocket.post(postTravel(node, new AtomicInteger(0), 0));
 		} catch (Exception e) {
@@ -33,7 +33,7 @@ public class PrintableUtils {
 	 * @param height 树的高度
 	 * @param depth 遍历的深度
 	 * */
-	public static PrintableNode postTravel(Node node, AtomicInteger leafX, int depth) {
+	public static PrintableNode postTravel(BNode node, AtomicInteger leafX, int depth) {
 		
 		PrintableNode printableNode = new PrintableNode();
 		if(node.isLeaf()) {

@@ -16,12 +16,14 @@ public interface BTreeTest {
 		BTree tree23 = new BTree();
 		Debugger.startDaemon(()->{
 			BTree tree = new BTree();
-			tree.setRoot(SerializationUtils.deserialize(new FileInputStream("./abcd.dat")));
+			tree = SerializationUtils.deserialize(new FileInputStream("./abcd.dat"));
 			Debugger.set("tree", tree);
 			/*Debugger.set("sss", tree.search(77));
-			tree.t0();*/
+			*/
 			//tree.search(222).getNode().subsitution(3);
 			//tree.remove(797);
+//			tree.remove(210);
+			tree.rendered();
 			System.out.println();
 			
 			//Node.cloneByInsertTest();
