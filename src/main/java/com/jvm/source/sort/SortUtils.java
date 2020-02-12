@@ -13,7 +13,7 @@ public interface SortUtils {
 	public static int[] initData(int size) {
 		int[]data = new int[size];
 		for(int i=0; i < size; i ++) {
-			data[i] = new Random().nextInt(1000);
+			data[i] = new Random().nextInt(100);
 		}
 		return data;
 	}

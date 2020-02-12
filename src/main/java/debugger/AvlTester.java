@@ -1,8 +1,5 @@
 package debugger;
 
-import com.jvm.source.b.BTree;
-import com.jvm.source.b.BNode;
-
 /**
  * @功能说明:
  * @创建者: Pom
@@ -11,11 +8,14 @@ import com.jvm.source.b.BNode;
  * @版本:V1.0
  */
 public interface AvlTester {
-	/**
-	 * debugger.AvlTester.t0()
-	 */
-	public static void t0(BNode root) throws Exception {
-		new Thread(()->{
-		}) .start();
+	public static void main(String[] args) {
+		int n = 1000;
+		double selectOne = 2d/n;
+		double selectThree = 1d * (n-2) * 3 * 3 * 2 / (n * (n-1)*(n-2));
+		System.out.printf("%f %f %f\n", selectOne, selectThree, selectOne - selectThree);
+		System.out.printf("%f\n", (selectOne - selectThree)/selectThree*100);
+	}
+	public static float t0(int n) throws Exception {
+		return 1f/n;
 	}
 }
