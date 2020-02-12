@@ -1,5 +1,7 @@
 package com.jvm.source.b;
 
+import java.io.Serializable;
+
 import org.apache.commons.lang3.SerializationUtils;
 
 import com.jvm.source.b.Node.SearchResult;
@@ -11,7 +13,8 @@ import com.jvm.source.b.Node.SearchResult;
  * @公司名称: 180830.com
  * @版本:V1.0
  */
-public class BTree {
+public class BTree implements Serializable{
+	private static final long serialVersionUID = -4142356057007083710L;
 	private Node root = null;
 	public void setRoot(Node root) {
 		this.root = root;
