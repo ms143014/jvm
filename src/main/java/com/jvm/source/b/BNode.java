@@ -224,18 +224,23 @@ public class BNode implements Serializable{
 		BNode left = this.getChild(index - 1);
 		BNode right = this.getChild(index);
 		right.lend(1, (lendKey, lendLeft, lendRight)->{
-			left.cloneByInsert(this.getKey(index), (childs, i)->{
+			left.keyNum++;
+			left.setChild(left.keyNum, lendLeft);
+			left.setKey(left.keyNum, this.getKey(index));
+			/*left.cloneByInsert(this.getKey(index), (childs, i)->{
 				childs[i] = lendLeft;
-			});
+			});*/
 			this.setKey(index, lendKey); //parent更新
 		});
 	}
 	/**
 	 * 右子树不够，借给右子树，向左子树借
+	 * @param index 父节点key的下标index [index-1]是左子树，[index]是右子树
 	 * */
 	protected void lendToRight(int index) {
 		BNode left = this.getChild(index - 1);
 		BNode right = this.getChild(index);
+		
 		left.lend(left.getKeyNum(), (lendKey, lendLeft, lendRight)->{
 			right.cloneByInsert(this.getKey(index), (childs, _index)->{
 				childs[0] = lendRight;
@@ -245,6 +250,9 @@ public class BNode implements Serializable{
 	}
 	/**
 	 * 	借出去一个元素
+	 * 	左边借出最后一个元素
+	 * 	右边借出第一个元素
+	 * 	父节点借出一个元素用于左右合并
 	 * @param iterator 借出去的元素数据暴露，这个有可能为null，当合并的时候，去parent借一个节点
 	 * */
 	public void lend(int index, NodeIterator iterator) {
@@ -252,12 +260,29 @@ public class BNode implements Serializable{
 			if(iterator != null) {
 				iterator.usage(this.data[index], this.childs[index - 1], this.childs[index]);
 			}
-			//左子树补一下
-			this.childs[index - 1] = this.childs[index]; //处理左孩子
-			for(int i = index; i < this.keyNum; i++) {
-				this.data[i] =  this.data[i + 1]; 
-				this.childs[i] =  this.childs[i + 1]; 
+			if(index == 1) { //借出第一个元素，属于 右边借给左边
+				for(int i = 1; i < this.keyNum; i++) {
+					this.data[i] =  this.data[i + 1]; 
+				}
+				for(int i = 0; i < this.keyNum; i++) {
+					this.childs[i] =  this.childs[i + 1]; 
+				}
+			}else if(index == this.keyNum) { //借出最后一个元素，属于左边借给右边
+				//删除该节点以及它的右子树
+				for(int i = index; i < this.keyNum; i++) {
+					this.data[i] =  this.data[i + 1]; 
+					this.childs[i] =  this.childs[i + 1]; 
+				}
+			}else { //借中间 合并的时候借父节点的一个键合并
+				for(int i = index; i < this.keyNum; i++) {
+					this.data[i] =  this.data[i + 1]; 
+				}
+				for(int i = index - 1; i < this.keyNum; i++) {
+					this.childs[i] =  this.childs[i + 1]; 
+				}
 			}
+			this.childs[keyNum] = null; //清理一下
+			this.data[keyNum] = 0; //清理一下
 			this.keyNum--;
 		}
 	}
@@ -335,8 +360,9 @@ public class BNode implements Serializable{
 		BNode left = this.getChild(index - 1);
 		BNode right = this.getChild(index);
 		right.setKey(0, this.getKey(index)); //先取值
-		this.lend(index, null); //删
-		for(int i =0; i < right.keyNum + 1; i++) {
+		this.lend(index, null); //从父亲那里借出来
+		//复制右边的东西
+		for(int i = 0; i <= right.keyNum; i++) {
 			left.increKeyNum();
 			left.setKey(left.keyNum, right.getKey(i));
 			left.setChild(left.keyNum, right.getChild(i));
@@ -429,7 +455,8 @@ public class BNode implements Serializable{
 		//后续复制
 		for(int j = keyNum; j >= i; j--) {
 			if(j == 0 ) {
-				continue; //哨兵不复制
+				insertTo.childs[j + 1] = this.childs[j];
+				continue; //哨兵复制孩子，但不复制键
 			}
 			insertTo.data[j + 1] = this.data[j];
 			insertTo.childs[j + 1] = this.childs[j];

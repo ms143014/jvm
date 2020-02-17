@@ -1,6 +1,7 @@
 package com.jvm.source.b;
 
 import java.io.FileInputStream;
+import java.util.Random;
 
 import org.apache.commons.lang3.SerializationUtils;
 
@@ -16,14 +17,22 @@ public interface BTreeTest {
 		BTree tree23 = new BTree();
 		Debugger.startDaemon(()->{
 			BTree tree = new BTree();
-			tree = SerializationUtils.deserialize(new FileInputStream("./abcd.dat"));
+			int keyNums = 100 + new Random().nextInt(200);
+			for(int i=0; i < keyNums; i ++) {
+				tree.insert(new Random().nextInt(1000));
+			}
+			Debugger.serialize(tree, "./abcd.dat");
+//			tree = SerializationUtils.deserialize(new FileInputStream("./abcd.dat"));
 			Debugger.set("tree", tree);
-			/*Debugger.set("sss", tree.search(77));
-			*/
-			//tree.search(222).getNode().subsitution(3);
-			//tree.remove(797);
-//			tree.remove(210);
-			tree.rendered();
+//			tree.remove(548,969,537,632,332);
+//			tree.remove(712); //重复863
+			try {
+				tree.testForRemoveAllNode();
+			}catch (Exception e) {
+				e.printStackTrace();
+			}
+			
+//			tree.rendered();
 			System.out.println();
 			
 			//Node.cloneByInsertTest();

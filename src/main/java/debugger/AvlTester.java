@@ -1,5 +1,8 @@
 package debugger;
 
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+
 /**
  * @功能说明:
  * @创建者: Pom
@@ -8,14 +11,28 @@ package debugger;
  * @版本:V1.0
  */
 public interface AvlTester {
-	public static void main(String[] args) {
-		int n = 1000;
-		double selectOne = 2d/n;
-		double selectThree = 1d * (n-2) * 3 * 3 * 2 / (n * (n-1)*(n-2));
-		System.out.printf("%f %f %f\n", selectOne, selectThree, selectOne - selectThree);
-		System.out.printf("%f\n", (selectOne - selectThree)/selectThree*100);
-	}
-	public static float t0(int n) throws Exception {
-		return 1f/n;
+	/**
+	 * debugger.AvlTester.t0()
+	 * */
+	public static void t0() throws Exception {
+		new Thread(()->{
+			Lock lock = Debugger.get("lock");
+			lock.lock();
+			lock.unlock();
+//			boolean locked = false;
+//			try {
+//				if(locked = lock.tryLock()) {
+//					System.out.println("得到了锁");
+//				}else {
+//					System.out.println("获取锁失败");
+//				}
+//			}finally {
+//				if(locked) {
+//					lock.unlock();
+//					System.out.println("锁获锁释放");
+//				}
+//			}
+//			System.out.println("fin");
+		}) .start();
 	}
 }

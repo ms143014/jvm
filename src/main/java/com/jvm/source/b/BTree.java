@@ -3,10 +3,13 @@ package com.jvm.source.b;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.lang3.SerializationUtils;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jvm.source.b.BNode.SearchResult;
 
 /**
@@ -103,6 +106,12 @@ public class BTree implements Serializable{
 				node.setKey(i, 0);
 				node.setChild(i, null);
 				node.decreKeyNum();
+				if(node == this.root) {
+					if(node.getKeyNum() == 0) {
+						this.root = null;
+						return true;
+					}
+				}
 			}else { //删除中间节点
 				node.subsitution(findndex.get()); //替换 找前继或者后继随便一个，本例找后继
 				remove(node.getChild(findndex.get()), node.getKey(findndex.get())); //删除直接后继节点
@@ -123,6 +132,7 @@ public class BTree implements Serializable{
 					BNode brother = node.getChild(1);
 					if(brother.decreOnLowerBound()) { //兄弟没得借
 						node.combine(1);
+						
 					}else { //借兄弟的第一个key
 						node.lendToLeft(1);
 					}
@@ -137,12 +147,15 @@ public class BTree implements Serializable{
 				}else { //在中间
 					//左借 右借
 					if(!node.getChild(trackIndex - 1).decreOnLowerBound()) { //左兄有得借
-						node.lendToRight(trackIndex - 1);
+						node.lendToRight(trackIndex);
 					}else if(!node.getChild(trackIndex + 1).decreOnLowerBound()){ //右兄有得借
-						node.lendToLeft(trackIndex + 1);
+						node.lendToLeft(trackIndex + 1); //因为是向右兄弟借，所以下标+1 [下标+1]作为右子树 [下标]作为左子树
 					}else {
 						node.combine(trackIndex); //跟左边组合
 					}
+				}
+				if(node == this.root && node.getKeyNum() == 0) { //根节点只有一个元素，被借了
+					this.root = node.getChild(0); //合并之后左孩子就是新root
 				}
 			}
 		}
@@ -197,5 +210,76 @@ public class BTree implements Serializable{
 			}
 		}
 	}
-	
+	//////For Test
+	public void testForRemoveAllNode() {
+		List<Integer> treeKeys = new ArrayList<>();
+		if(this.root != null) {
+			travelAllNode(this.root, treeKeys);
+			System.out.println("B树有: "+treeKeys.size()+ "个元素");
+		}
+		int treeKeysSize = treeKeys.size();
+		List<Integer> removedKeys = new ArrayList<>();
+		while(treeKeys.size() > 0) {
+			int randomIndex = new Random().nextInt(treeKeys.size());
+			int randomKey = treeKeys.get(randomIndex);
+			
+			removedKeys.add(randomKey);
+			try {
+				System.out.printf("删除的元素 数目: %d 总数: %d, %s\n", removedKeys.size(), treeKeysSize, new ObjectMapper().writeValueAsString(removedKeys));
+			} catch (JsonProcessingException e) {
+				e.printStackTrace();
+			}
+			System.out.println("删除元素:" + randomKey);
+			
+			Debugger.set("temp", Debugger.clone(this));
+			
+			remove(randomKey);
+			
+			checkTree();
+			
+			treeKeys.remove(randomIndex);
+			
+		}
+		if(this.root != null) {
+			throw new RuntimeException("删除后root还有东西");
+		}
+	}
+	public void checkTree() {
+		travelAllNode(this.root, new ArrayList<>());
+		System.out.println("检查结束");
+	}
+	private void travelAllNode(BNode node, List<Integer> treeKeys) {
+		if(node == null) {
+			return; 
+		}
+		for(int i = 1; i <= node.getKeyNum(); i++) {
+			BNode leftChild = node.getChild(i - 1);
+			BNode rightChild = node.getChild(i);
+			int key = node.getKey(i);
+			if(i == 1) {
+				travelAllNode(leftChild, treeKeys);
+				if(leftChild != null) {
+					for(int j=1; j <= leftChild.getKeyNum(); j++) {
+						if(key < leftChild.getKey(j)) {
+							throw new RuntimeException("顺序不对");
+						}
+					}
+				}
+			}
+			travelAllNode(rightChild, treeKeys);
+			if(rightChild != null) {
+				for(int j=1; j <= rightChild.getKeyNum(); j++) {
+					if(key > rightChild.getKey(j)) {
+						throw new RuntimeException("顺序不对");
+					}
+				}
+			}
+			if(treeKeys != null) {
+				if(treeKeys.contains(key)) {
+					throw new RuntimeException("有重复值:"+ key);
+				}
+				treeKeys.add(key);
+			}
+		}
+	}
 }
