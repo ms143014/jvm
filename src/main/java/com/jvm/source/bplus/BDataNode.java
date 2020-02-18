@@ -12,8 +12,22 @@ import java.io.Serializable;
 public class BDataNode<T, V extends Comparable<V>> extends BIndexNode<T, V> implements Serializable{
 	private static final long serialVersionUID = 8136739034009505960L;
 	protected BDataNode<T, V> next = null;
+	protected Object values[];
 	public BDataNode(int nodeSize) {
 		super(nodeSize);
+		this.values = new Object[nodeSize];
+	}
+	public BDataNode(int nodeSize, T value, V key) {
+		this(nodeSize);
+		this.values[0] = value;
+		super.keys[0] = key;
+		super.incrSize();
+	}
+	public void setValue(int index, T value) {
+		this.values[index] = value;
+	}
+	public T getValue(int index) {
+		return (T)this.values[index];
 	}
 
 }
