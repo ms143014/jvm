@@ -12,6 +12,6 @@ public interface Debugger2 {
 		com.d.p.Debugger2.t1();
 	}
 	public static void t1() throws Exception {
-		System.out.println("fuck");
+		System.out.println("fuck13");
 	}
 }
